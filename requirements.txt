@@ -1,0 +1,22 @@
+# Morning Brief 프로젝트 필요 패키지
+# 설치: source venv/bin/activate 후 pip install -r requirements.txt
+
+anthropic>=0.40.0            # Claude API (브리핑 생성)
+python-dotenv>=1.0.0         # .env 파일에서 API 키 읽기
+
+# 시장 데이터
+yfinance>=0.2.40            # 주가/지수/환율/원자재 데이터
+
+# 뉴스 (RSS 방식 - API 키 불필요, 안정적)
+feedparser>=6.0.11         # 뉴스 RSS 피드 파싱
+requests>=2.31.0           # 웹 요청
+beautifulsoup4>=4.12.0     # HTML 파싱 (필요시)
+lxml>=5.0.0                # 빠른 파서
+
+# Google Calendar
+google-api-python-client>=2.100.0
+google-auth>=2.30.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+markdown>=3.5
+openpyxl>=3.1
