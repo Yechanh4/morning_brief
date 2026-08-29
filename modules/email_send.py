@@ -204,12 +204,20 @@ def send_email(subject: str, html_body: str, attachment_path: str = None):
         part.add_header("Content-Disposition", f'attachment; filename="{fname}"')
         msg.attach(part)
 
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as server:
-            server.login(gmail, app_pw)
-            server.send_message(msg)
-        return True, None
-    except smtplib.SMTPAuthenticationError:
-        return False, "Gmail 로그인 실패: 앱 비밀번호 확인"
-    except Exception as e:
-        return False, f"{type(e).__name__}: {e}"
+    # 네트워크 재연결(맥 잠자기→깨어남 등) 대비 자동 재시도
+    import time
+    attempts = 5
+    last_err = None
+    for i in range(attempts):
+        try:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as server:
+                server.login(gmail, app_pw)
+                server.send_message(msg)
+            return True, None
+        except smtplib.SMTPAuthenticationError:
+            return False, "Gmail 로그인 실패: 앱 비밀번호 확인"   # 재시도 무의미
+        except Exception as e:
+            last_err = f"{type(e).__name__}: {e}"
+            if i < attempts - 1:
+                time.sleep(30)   # 네트워크 붙을 때까지 30초 대기 후 재시도
+    return False, f"{attempts}회 재시도 실패: {last_err}"
