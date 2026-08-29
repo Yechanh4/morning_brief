@@ -26,7 +26,8 @@ load_dotenv()
 
 
 def _market_rows_html(market_data) -> str:
-    """시장 데이터를 색깔 있는 표 행(HTML)으로 변환. 상승=초록, 하락=빨강."""
+    """시장 데이터를 색깔 있는 표 행(HTML)으로 변환. 상승=초록, 하락=빨강. USD자산은 원화환산 병기."""
+    from modules.market import format_krw
     if not market_data or not market_data.get("results"):
         return '<tr><td style="padding:10px;color:#888;">시장 데이터 없음</td></tr>'
     rows = []
@@ -36,10 +37,14 @@ def _market_rows_html(market_data) -> str:
         arrow = "▲" if up else "▼"
         sign = "+" if up else ""
         price = format_price(m["price"], m["unit"])
+        # 원화 환산 (USD 자산만)
+        krw = m.get("krw_price")
+        krw_txt = f'<div style="font-size:11px;color:#888;">≈ {format_krw(krw)}</div>' if krw else ""
+        live = ' <span style="font-size:10px;color:#f59e0b;">●LIVE</span>' if m.get("is_open") else ""
         rows.append(f"""
         <tr>
-          <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:14px;color:#333;">{m['name']}</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:14px;color:#111;text-align:right;font-weight:600;">{price}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:14px;color:#333;">{m['name']}{live}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:14px;color:#111;text-align:right;font-weight:600;">{price}{krw_txt}</td>
           <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:14px;color:{color};text-align:right;font-weight:600;white-space:nowrap;">{arrow} {sign}{m['change_pct']:.2f}%</td>
         </tr>""")
     return "".join(rows)
@@ -132,7 +137,8 @@ def build_html(brief_markdown: str, market_data, news_data, today_str: str,
     {analysis_box}
 
     <!-- 시장 데이터 표 -->
-    <div style="font-size:16px;font-weight:700;color:#111;margin:0 0 12px;">📊 마켓 스냅샷</div>
+    <div style="font-size:16px;font-weight:700;color:#111;margin:0 0 4px;">📊 마켓 스냅샷</div>
+    <div style="font-size:11px;color:#888;margin:0 0 12px;">실시간 시세 · 적용환율 USD/KRW {(f"{market_data.get('krw_rate'):,.1f}원" if market_data and market_data.get('krw_rate') else "-")}</div>
     <table style="width:100%;border-collapse:collapse;background:#fafafa;border-radius:8px;overflow:hidden;">
       {market_rows}
     </table>

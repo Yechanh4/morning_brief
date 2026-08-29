@@ -129,6 +129,21 @@ def _download_prices(tickers, period="2y", include_today=False):
     else:
         close = close[close.index < today]
     close = close.dropna(how="all")
+
+    # 🔧 최신 종가 백필 — history()가 최근 거래일 종가 반영을 지연할 때가 있어,
+    #    fast_info의 '완료 종가'로 각 자산 마지막 행을 덮어써서 최신값 보장
+    #    (예: 코스피 history 6,912(어제) → 실제 최신 6,788 로 교정)
+    if len(close) > 0:
+        from modules.quote import get_quote
+        last_idx = close.index[-1]
+        for t in tickers:
+            nm, sym = t["name"], t["symbol"]
+            if nm not in close.columns:
+                continue
+            q, err = get_quote(sym)
+            if not err and q.get("completed_close") is not None:
+                close.loc[last_idx, nm] = float(q["completed_close"])
+
     return close, failed
 
 

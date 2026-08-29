@@ -19,6 +19,7 @@ import anthropic
 
 from modules.news import fetch_topic
 from modules.excel_export import _last_bar_complete
+from modules.quote import get_quote
 
 load_dotenv()
 
@@ -53,6 +54,14 @@ def compute_alerts(tickers, sigma_window=60, z_mult=2.0, pct_index=0.02, pct_sto
             if len(close) < 5:
                 alerts.append({"name": name, "symbol": sym, "error": "데이터 부족", "flagged": False})
                 continue
+
+            # 🔧 history가 최근 완료 종가를 놓쳤으면 fast_info 완료종가를 최신값으로 추가
+            q, _qerr = get_quote(sym)
+            if q and q.get("completed_close") is not None and close.iloc[-1]:
+                c = float(q["completed_close"])
+                if abs(c - close.iloc[-1]) / close.iloc[-1] > 0.0005:
+                    new_idx = close.index[-1] + pd.Timedelta(days=1)
+                    close = pd.concat([close, pd.Series([c], index=[new_idx])])
 
             rets = close.pct_change().dropna()
             last_ret = float(rets.iloc[-1])
