@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 import anthropic
 
 from modules.excel_export import _download_prices
+from modules.quote import session_context
 
 load_dotenv()
 TD = 252
@@ -110,6 +111,9 @@ SYSTEM_PROMPT = """너는 예찬(케어마인더 co-founder, CFA L2 준비, IB/P
 규칙:
 - 데이터에 근거해서 구체적 숫자를 인용해. 뜬구름 금지. 없는 사실 지어내지 마.
 - 통찰 위주로. "그래서 뭐?"에 답해. CFA 개념(위험조정성과, 상관/분산, 체제) 자연스럽게 활용.
+- 모든 가격/변동성은 **정규장(시초가·종가·정규장 변동성) 기준**. 프리장·애프터장 움직임은
+  '다음 정규장에 영향 줄 만큼 유의미할 때'만 별도로 언급해.
+- 맨 위에 지금이 어느 세션 기준인지(국장/미장 정규·애프터·휴장) 한 줄로 명시해.
 - 아래 형식(마크다운)을 따르되 각 섹션 2~5줄로 밀도있게.
 
 ## 🧭 시장 체제 진단
@@ -151,9 +155,11 @@ def generate_deep_analysis(tickers, alerts, causes, news_data, today, model,
         for a in flagged
     ) or "- 오늘 임계치 초과 FLAG 없음"
 
+    sess = session_context()
     user = f"""오늘: {today}
+현재 세션: {sess}
 
-=== 자산별 정량지표 ===
+=== 자산별 정량지표 (정규장 종가 기준) ===
 {_metrics_text(metrics, corr)}
 
 === 오늘 FLAG된 이상변동 ===
@@ -171,6 +177,8 @@ def generate_deep_analysis(tickers, alerts, causes, news_data, today, model,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user}],
         )
-        return resp.content[0].text.strip(), None
+        memo = resp.content[0].text.strip()
+        header = f"> 🕒 분석 기준: {sess} · 정규장(시초가·종가·변동성) 기준\n\n"
+        return header + memo, None
     except Exception as e:
         return None, f"{type(e).__name__}: {e}"

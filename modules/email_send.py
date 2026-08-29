@@ -25,6 +25,15 @@ from modules.market import format_price
 load_dotenv()
 
 
+def _session_ctx() -> str:
+    """지금 국장/미장 세션 상태 한 줄 (실패해도 이메일은 나가게)."""
+    try:
+        from modules.quote import session_context
+        return session_context()
+    except Exception:
+        return "정규장 종가"
+
+
 def _market_rows_html(market_data) -> str:
     """시장 데이터를 색깔 있는 표 행(HTML)으로 변환. 상승=초록, 하락=빨강. USD자산은 원화환산 병기."""
     from modules.market import format_krw
@@ -137,8 +146,8 @@ def build_html(brief_markdown: str, market_data, news_data, today_str: str,
     {analysis_box}
 
     <!-- 시장 데이터 표 -->
-    <div style="font-size:16px;font-weight:700;color:#111;margin:0 0 4px;">📊 마켓 스냅샷</div>
-    <div style="font-size:11px;color:#888;margin:0 0 12px;">실시간 시세 · 적용환율 USD/KRW {(f"{market_data.get('krw_rate'):,.1f}원" if market_data and market_data.get('krw_rate') else "-")}</div>
+    <div style="font-size:16px;font-weight:700;color:#111;margin:0 0 4px;">📊 마켓 스냅샷 <span style="font-size:11px;font-weight:400;color:#888;">(정규장 종가 기준)</span></div>
+    <div style="font-size:11px;color:#888;margin:0 0 12px;">{_session_ctx()} · 적용환율 USD/KRW {(f"{market_data.get('krw_rate'):,.1f}원" if market_data and market_data.get('krw_rate') else "-")}</div>
     <table style="width:100%;border-collapse:collapse;background:#fafafa;border-radius:8px;overflow:hidden;">
       {market_rows}
     </table>

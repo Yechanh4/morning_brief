@@ -449,7 +449,7 @@ def _append_alert_history(wb, alerts, causes):
         cc.alignment = Alignment(wrap_text=True, vertical="top")
 
 
-def build_analysis_workbook(tickers, path=None, period="2y", alerts=None, causes=None,
+def build_analysis_workbook(tickers, path=None, period=None, alerts=None, causes=None,
                             analysis_text=None):
     """
     분석 워크북을 생성/갱신.
@@ -464,6 +464,11 @@ def build_analysis_workbook(tickers, path=None, period="2y", alerts=None, causes
             from config import INCLUDE_TODAY_IN_EXCEL as _inc
         except Exception:
             _inc = False
+        if period is None:
+            try:
+                from config import HISTORY_PERIOD as period
+            except Exception:
+                period = "1y"
         prices, failed = _download_prices(tickers, period=period, include_today=_inc)
         if prices.empty:
             return None, "가격 데이터를 하나도 못 받음"
